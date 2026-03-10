@@ -1,7 +1,12 @@
+secrets/
+state/
 logs/
 outputs/
-secrets/
-scan_reports/
+*.tfstate
+*.tfstate.backup
+.terraform/
+.env
+!.env.example
 __pycache__/
 *.pyc
-.env
+scan_reports/
