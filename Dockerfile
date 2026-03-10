@@ -33,25 +33,20 @@ RUN pip install --prefix=/install --no-cache-dir \
     "pydantic>=2.0.0" \
     "cryptography>=41.0.0"
 
-# ── Download Terraform (verified checksum URL) ────────────────
+# ── Install Terraform ─────────────────────────────────────────
 ARG TERRAFORM_VERSION=1.7.5
 RUN ARCH=$(dpkg --print-architecture) \
-    && wget -q "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" \
-         -O /tmp/terraform.zip \
+    && wget -q https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip \
+    -O /tmp/terraform.zip \
     && unzip /tmp/terraform.zip -d /tmp/terraform_bin \
-    && chmod +x /tmp/terraform_bin/terraform \
-    && /tmp/terraform_bin/terraform version
+    && chmod +x /tmp/terraform_bin/terraform
 
-# ── Install Trivy via official apt repo (most reliable method) ─
-# Uses Aqua Security's official Debian repo — no version pinning needed
-RUN wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
-        | gpg --dearmor -o /usr/share/keyrings/trivy.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
-        > /etc/apt/sources.list.d/trivy.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends trivy \
-    && cp $(which trivy) /tmp/trivy \
-    && rm -rf /var/lib/apt/lists/*
+# ── Install Trivy ────────────────────────────────────────────
+ARG TRIVY_VERSION=0.69.3
+RUN wget -q https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz \
+    -O /tmp/trivy.tar.gz \
+    && tar -xzf /tmp/trivy.tar.gz -C /tmp \
+    && chmod +x /tmp/trivy
 
 # ── Install tfsec via official apt repo ───────────────────────
 # tfsec is now maintained alongside trivy by Aqua Security
@@ -61,7 +56,6 @@ RUN wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
          -o /tmp/tfsec \
     && chmod +x /tmp/tfsec \
     && /tmp/tfsec --version
-
 
 # ── Stage 2: Final slim image ─────────────────────────────────
 FROM python:3.11-slim AS final
