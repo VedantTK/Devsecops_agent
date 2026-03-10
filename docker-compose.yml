@@ -1,0 +1,118 @@
+# ============================================================
+# docker-compose.yml — DevSecOps Agent
+#
+# USAGE:
+#   docker compose up aws      # Run with AWS
+#   docker compose up gcp      # Run with GCP
+#   docker compose up azure    # Run with Azure
+#   docker compose run aws test  # Run smoke tests
+# ============================================================
+
+version: "3.9"
+
+# ── Shared base config ──────────────────────────────────────
+x-base: &base
+  image: devsecops-agent:latest
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      TERRAFORM_VERSION: "1.7.5"
+      TRIVY_VERSION: "0.50.1"
+  stdin_open: true      # -i  (interactive)
+  tty: true             # -t  (terminal)
+  volumes:
+    - ./outputs:/app/outputs          # generated IaC files
+    - ./logs:/app/logs                # audit logs
+    - ./scan_reports:/app/scan_reports
+  environment:
+    - PYTHONUNBUFFERED=1
+    - TERM=xterm-256color
+    - COLORAMA_FORCE=1
+
+# ── Shared AWS base ─────────────────────────────────────────
+x-aws-base: &aws-base
+  <<: *base
+  volumes:
+    - ./outputs:/app/outputs
+    - ./logs:/app/logs
+    - ./scan_reports:/app/scan_reports
+    - ${HOME}/.aws:/home/agent/.aws:ro   # mount host AWS credentials (read-only)
+  environment:
+    - PYTHONUNBUFFERED=1
+    - TERM=xterm-256color
+    - COLORAMA_FORCE=1
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+    - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+    - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-ap-south-1}
+    - AWS_PROFILE=${AWS_PROFILE:-}
+
+services:
+
+  # ── AWS Interactive Agent ─────────────────────────────────
+  aws:
+    <<: *aws-base
+    container_name: devsecops-aws
+    command: run
+
+  # ── AWS Audit Mode ────────────────────────────────────────
+  aws-audit:
+    <<: *aws-base
+    container_name: devsecops-aws-audit
+    command: ["audit", "/app/outputs"]
+    profiles: ["audit"]
+
+  # ── GCP Interactive Agent ─────────────────────────────────
+  gcp:
+    <<: *base
+    container_name: devsecops-gcp
+    command: run
+    volumes:
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./scan_reports:/app/scan_reports
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/secrets/gcp-key.json:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TERM=xterm-256color
+      - COLORAMA_FORCE=1
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-}
+      - CLOUDSDK_CORE_PROJECT=${GOOGLE_CLOUD_PROJECT:-}
+
+  # ── Azure Interactive Agent ───────────────────────────────
+  azure:
+    <<: *base
+    container_name: devsecops-azure
+    command: run
+    volumes:
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./scan_reports:/app/scan_reports
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TERM=xterm-256color
+      - COLORAMA_FORCE=1
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:-}
+
+  # ── Test runner ───────────────────────────────────────────
+  test:
+    <<: *base
+    container_name: devsecops-test
+    command: test
+    stdin_open: false
+    tty: false
+    profiles: ["test"]
+
+  # ── Version checker ───────────────────────────────────────
+  version:
+    <<: *base
+    container_name: devsecops-version
+    command: version
+    stdin_open: false
+    tty: false
+    profiles: ["version"]
