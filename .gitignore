@@ -1,0 +1,7 @@
+logs/
+outputs/
+secrets/
+scan_reports/
+__pycache__/
+*.pyc
+.env
