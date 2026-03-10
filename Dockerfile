@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     lsb-release \
-    software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Install Python dependencies ───────────────────────────────
