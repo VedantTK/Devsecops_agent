@@ -1,0 +1,55 @@
+# ── Python cache ────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Terraform state & sensitive files ───────────────────────
+**/*.tfstate
+**/*.tfstate.backup
+**/.terraform/
+**/tfplan
+**/destroy.tfplan
+**/.terraform.lock.hcl
+
+# ── Secrets — NEVER in image ────────────────────────────────
+secrets/
+.env
+.env.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+
+# ── Local outputs — not part of image ───────────────────────
+outputs/
+logs/
+scan_reports/
+
+# ── Git ──────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── IDE / editor ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Docker files themselves ───────────────────────────────────
+docker-compose*.yml
+Dockerfile*
+docker/
+
+# ── Docs ─────────────────────────────────────────────────────
+README.md
+*.md
+
+# ── Junk dirs from earlier session ───────────────────────────
+{agent,templates*
